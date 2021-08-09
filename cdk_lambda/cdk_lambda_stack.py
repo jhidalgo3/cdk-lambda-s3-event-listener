@@ -10,7 +10,8 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_s3 as s3,
     aws_s3_notifications as s3_notifications,
-    core as cdk
+    core as cdk,
+    aws_lambda_event_sources as event_src
 )
 
 
@@ -30,8 +31,8 @@ class CdkLambdaStack(cdk.Stack):
         bucket = s3.Bucket(self, 'jhidalgo3-vs-bucket',
             removal_policy=cdk.RemovalPolicy.DESTROY,
             auto_delete_objects=True,
-            block_public_access= s3.BlockPublicAccess.BLOCK_ALL
-            
+            block_public_access= s3.BlockPublicAccess.BLOCK_ALL,
+            encryption=s3.BucketEncryption.S3_MANAGED
         )
         #.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
         
@@ -48,11 +49,19 @@ class CdkLambdaStack(cdk.Stack):
             })
 
         # Create trigger for Lambda function with image type suffixes
-        notification = s3_notifications.LambdaDestination(lambda_func)
-        notification.bind(self, bucket)
-        bucket.add_object_created_notification(
-            notification, s3.NotificationKeyFilter(suffix='.jpg'))
-        bucket.add_object_created_notification(
-            notification, s3.NotificationKeyFilter(suffix='.jpeg'))
-        bucket.add_object_created_notification(
-            notification, s3.NotificationKeyFilter(suffix='.png'))
+        #notification = s3_notifications.LambdaDestination(lambda_func)
+        #notification.bind(self, bucket)
+        #bucket.add_object_created_notification(
+        #    notification, s3.NotificationKeyFilter(suffix='.jpg'))
+        #bucket.add_object_created_notification(
+        #    notification, s3.NotificationKeyFilter(suffix='.jpeg'))
+        #bucket.add_object_created_notification(
+        #    notification, s3.NotificationKeyFilter(suffix='.png'))
+
+        lambda_func.add_event_source(
+            event_src.S3EventSource(
+                bucket, 
+                events=[s3.EventType.OBJECT_CREATED],
+                filters=[s3.NotificationKeyFilter(suffix='.jpg')]
+            )
+        )
