@@ -21,11 +21,11 @@ class CdkLambdaStack(cdk.Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         # create new IAM group and use
-        group = iam.Group(self, "jhidalgo3-VSGroup")
-        user = iam.User(self, "jhidalgo3-VSUser")
-
-        # Add IAM user to the group
-        user.add_to_group(group)
+        #group = iam.Group(self, "jhidalgo3-VSGroup")
+        #user = iam.User(self, "jhidalgo3-VSUser")
+#
+        ## Add IAM user to the group
+        #user.add_to_group(group)
 
         # Create S3 Bucket
         bucket = s3.Bucket(self, 'jhidalgo3-vs-bucket',
@@ -36,7 +36,7 @@ class CdkLambdaStack(cdk.Stack):
         )
         #.apply_removal_policy(cdk.RemovalPolicy.DESTROY)
         
-        bucket.grant_read_write(user)
+        #bucket.grant_read_write(user)
 
         # Create a lambda function
         lambda_func = _lambda.Function(
@@ -48,20 +48,23 @@ class CdkLambdaStack(cdk.Stack):
                 'BUCKET_NAME': bucket.bucket_name
             })
 
+        bucket.grant_read_write(lambda_func)
+
         # Create trigger for Lambda function with image type suffixes
-        #notification = s3_notifications.LambdaDestination(lambda_func)
-        #notification.bind(self, bucket)
+        notification = s3_notifications.LambdaDestination(lambda_func)
+        notification.bind(self, bucket)
+        bucket.add_object_created_notification(
+            notification, s3.NotificationKeyFilter(suffix='.tar.gz'))
+
         #bucket.add_object_created_notification(
         #    notification, s3.NotificationKeyFilter(suffix='.jpg'))
         #bucket.add_object_created_notification(
         #    notification, s3.NotificationKeyFilter(suffix='.jpeg'))
-        #bucket.add_object_created_notification(
-        #    notification, s3.NotificationKeyFilter(suffix='.png'))
-
-        lambda_func.add_event_source(
-            event_src.S3EventSource(
-                bucket, 
-                events=[s3.EventType.OBJECT_CREATED],
-                filters=[s3.NotificationKeyFilter(suffix='.jpg')]
-            )
-        )
+        
+        #lambda_func.add_event_source(
+        #    event_src.S3EventSource(
+        #        bucket, 
+        #        events=[s3.EventType.OBJECT_CREATED],
+        #        filters=[s3.NotificationKeyFilter(suffix='.jpg')]
+        #    )
+        #)
